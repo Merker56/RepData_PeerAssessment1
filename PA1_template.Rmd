@@ -4,22 +4,96 @@ output:
   html_document:
     keep_md: true
 ---
-
+## Set Working Directory to Github folder
+setwd("C:\\Users\\jmercer\\Documents\\Personal\\R\\Coursera\\ReproducibleResearch\\RepData_PeerAssessment1")
 
 ## Loading and preprocessing the data
-
-
-
+z <- read.csv("~/Personal/R/Coursera/ReproducibleResearch/activity.csv", header = TRUE, sep = ",")
 ## What is mean total number of steps taken per day?
-
-
+## Aggregate data for histogram
+p1 <- aggregate(z$steps~z$date, z, sum)
+colnames(p1) <- c("date", "steps")
+## Make a histogram of the total number of steps taken each day
+## Create the histogram output
+png(file= "hist1.png", width = 480, height = 480)
+hist(p1$steps, main = "Histogram of Total Number of Steps Each Day", 
+     xlab = "Steps", ylab = "Percent of Days")
+dev.off()
+## Calculate and report the mean and median of the total number of steps taken per day
+## Report the mean of steps taken per day
+print(mean(p1$steps, na.rm = TRUE))
+## Report the median steps per day
+print(median(p1$steps, na.rm = TRUE))
 
 ## What is the average daily activity pattern?
-
-
+## Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+## Create an aggregate to produce the mean per interval
+p2 <- aggregate(z$steps~z$interval, z, mean)
+colnames(p2) <- c("interval", "steps")
+## Create the time series plot output
+png(file= "ts1.png", width = 480, height = 480)
+plot(p2$interval, p2$steps, type = "l", xlab = "Interval (1 per 5 mintues)",
+  ylab = "Average Steps Taken")
+dev.off()
+## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+print(p2$interval[which.max(p2$steps)])
 
 ## Imputing missing values
+## Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+print(sum(is.na(z$steps)))
+## Devise a strategy for filling in all of the missing values in the dataset.
+## I'm choosing to fill in with the 5-minute average per interval.
+## First, move the data to a new df
+p3 <- z
+## Replace NAs in steps with the 5-minute average.
+## Using a while loop to loop over the dataset
+while ((sum(is.na(p3$steps))) > 0)
+p3$steps[is.na(p3$steps)] <- p2$steps[which(p3$interval == p2$interval)]
 
-
-
+for (i in 1:ncol(p3)) {
+ p3$steps[is.na(p3$steps[i])]<- p2$steps[which(p3$interval == p2$interval)]
+}
+## Make a dataset to aggregate by day
+p4 <- aggregate(p3$steps~p3$date, p3, sum)
+colnames(p4) <- c("date", "steps")
+## Histogram of the total number of steps each day
+png(file= "hist2.png", width = 480, height = 480)
+hist(p4$steps, main = "Histogram of Total Number of Steps Each Day", 
+     xlab = "Steps", ylab = "Percent of Days")
+dev.off()
+## Calculate and report the mean and median of the total number of steps taken per day
+## Report the mean of steps taken per day
+print(mean(p4$steps, na.rm = TRUE))
+## Report the median steps per day
+print(median(p4$steps, na.rm = TRUE))
+     
 ## Are there differences in activity patterns between weekdays and weekends?
+##Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+## Convert date to a Date
+p3$date <- as.Date(p3$date)
+## Create new factor wd
+p3$wd <- weekdays(p3$date, FALSE)
+## Set new factor to be weekday if Monday - Friday and weekend if Saturday or Sunday
+p3$wd[which(p3$wd == "Monday")] <- "weekday"
+p3$wd[which(p3$wd == "Tuesday")] <- "weekday"
+p3$wd[which(p3$wd == "Wednesday")] <- "weekday"
+p3$wd[which(p3$wd == "Thursday")] <- "weekday"
+p3$wd[which(p3$wd == "Friday")] <- "weekday"
+p3$wd[which(p3$wd == "Saturday")] <- "weekend"
+p3$wd[which(p3$wd == "Sunday")] <- "weekend"
+## Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+## Create tables for the two datasets (1 is weekday, 1 is weekend)
+p5 <- subset(p3, wd == "weekday")
+p5 <- aggregate(p5$steps~p5$interval, p5, mean)
+colnames(p5) <- c("interval", "steps")
+p6 <- subset(p3, wd == "weekend")
+p6 <- aggregate(p6$steps~p6$interval, p6, mean)
+colnames(p6) <- c("interval", "steps")
+## Create the plot
+png(file= "ts2.png", width = 480, height = 480)
+par(mfrow=c(2,1))
+plot(p5$interval, p5$steps, type = "l", main = "Weekday Average Number of Steps Taken",
+  xlab = "Interval (1 per 5 mintues)", ylab = "Average Steps Taken")
+plot(p6$interval, p6$steps, type = "l", main = "Weekend Average Number of Steps Taken",
+  xlab = "Interval (1 per 5 mintues)",  ylab = "Average Steps Taken")
+dev.off()
